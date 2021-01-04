@@ -6,69 +6,99 @@ export default class RainShower extends React.Component {
         super(props);
         this.state = {
             isLoading: true,
-            error: null
+            error: null,
         };
     }
 
-    componentDidMount() {
-        const days = 3; // TODO: dynamic, max of 3 days
-        const key = process.env.REACT_APP_WEATHER_API_KEY;
-        const query = 49103; // TODO: dynamic
-        fetch(`https://api.weatherapi.com/v1/forecast.json?q=${query}&days=${days}&key=${key}`)
-          .then(res => res.json())
-          .then(
-            (result) => {
-                // determine if it will rain in the next 3 days
-                var outputDayInfo = [];
-                var today = new Date();
-                today.setHours(0, 0, 0, 0); // remove time part of the date
-                result.forecast.forecastday.forEach(element => {
-                    // execute something
-                    var dateParts = element.date.split('-'); // 2020-01-04
-                    var dateBeingLookedAt = new Date(dateParts[0], dateParts[1] - 1 /* for month index */, dateParts[2]);
-                    dateBeingLookedAt.setHours(0, 0, 0, 0); // remove time part of the date
-                    var dayOffset = Math.abs((dateBeingLookedAt.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                    if (outputDayInfo[dayOffset]) {
-                        outputDayInfo[dayOffset].willRain |= element.day.daily_will_it_rain;
-                        outputDayInfo[dayOffset].willSnow |= element.day.daily_will_it_snow;
-                    } else {
-                        outputDayInfo[dayOffset] = {
-                            date: dateBeingLookedAt,
-                            offset: dayOffset,
-                            willRain: element.day.daily_will_it_rain,
-                            willSnow: element.day.daily_will_it_snow
-                        };
-                    }
-                });
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (prevProps.query !== this.props.query) {
+            this.setState({
+                isLoading: true
+            });
+            this.executeSearch();
+        }
+    }
 
-                this.setState({
-                    isLoading: false,
-                    apiResult: result,
-                    place: {
-                        name: result.location.name,
-                        region: result.location.region,
-                        country: result.location.country,
-                        time: result.location.localtime
-                    },
-                    currentConditions: {
-                        temperature: result.location.temp_f,
-                        condition: result.current.condition
-                    },
-                    data: outputDayInfo
-                });
-            },
-            (error) => {
-                this.setState({
-                    isLoading: false,
-                    error: error
-                });
-            }
-          )
-      }
+    componentDidMount() {
+        this.executeSearch();
+    }
+
+    executeSearch() {
+        const days = 3; // TODO: dynamic, max of 3 days with free api
+        const key = process.env.REACT_APP_WEATHER_API_KEY;
+        const query = this.props.query ?? '';
+        if (query === null || query === '') {
+            this.setState({
+                isLoading: false
+            });
+        } else {
+            console.log('fetching weather data...', query);
+            fetch(`https://api.weatherapi.com/v1/forecast.json?q=${query}&days=${days}&key=${key}`)
+            .then(res => res.json())
+            .then(
+                (result) => {
+                    console.log(result);
+                    if (result.error) {
+                        this.setState({
+                            isLoading: false,
+                            error: result.error
+                        })
+                    } else {
+                        // determine if it will rain in the next 3 days
+                        var outputDayInfo = [];
+                        var today = new Date();
+                        today.setHours(0, 0, 0, 0); // remove time part of the date
+                        result.forecast.forecastday.forEach(element => {
+                            // execute something
+                            var dateParts = element.date.split('-'); // 2020-01-04
+                            var dateBeingLookedAt = new Date(dateParts[0], dateParts[1] - 1 /* for month index */, dateParts[2]);
+                            dateBeingLookedAt.setHours(0, 0, 0, 0); // remove time part of the date
+                            var dayOffset = Math.abs((dateBeingLookedAt.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                            if (outputDayInfo[dayOffset]) {
+                                outputDayInfo[dayOffset].willRain |= element.day.daily_will_it_rain;
+                                outputDayInfo[dayOffset].willSnow |= element.day.daily_will_it_snow;
+                            } else {
+                                outputDayInfo[dayOffset] = {
+                                    date: dateBeingLookedAt,
+                                    offset: dayOffset,
+                                    willRain: element.day.daily_will_it_rain,
+                                    willSnow: element.day.daily_will_it_snow
+                                };
+                            }
+                        });
+                        this.setState({
+                            isLoading: false,
+                            apiResult: result,
+                            place: {
+                                name: result.location.name,
+                                region: result.location.region,
+                                country: result.location.country,
+                                time: result.location.localtime
+                            },
+                            currentConditions: {
+                                temperature: result.location.temp_f,
+                                condition: result.current.condition
+                            },
+                            data: outputDayInfo
+                        });
+                    }
+                },
+                (error) => {
+                    this.setState({
+                        isLoading: false,
+                        error: error
+                    });
+                }
+            )
+        }
+    }
 
     render() {
         if (this.state.isLoading) {
             return <h1>Loading...</h1>;
+        }
+        if (this.props.query === '' || this.props.query === null || !this.state.data) {
+            return <h1>Please type a query above to begin</h1>;
         }
         if (this.state.error !== null) {
             return (

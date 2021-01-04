@@ -1,6 +1,6 @@
 import logo from './logo.svg';
 import './App.css';
-import RainShower from './RainShower';
+import MakeItRainOverview from './MakeItRainOverview';
 
 function App() {
   return (
@@ -9,7 +9,7 @@ function App() {
         <h3>Make It Rain</h3>
         <h4>A weather app for sillies</h4>
       </header>
-      <RainShower/>
+      <MakeItRainOverview/>
     </div>
   );
 }
