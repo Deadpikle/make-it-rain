@@ -11,10 +11,10 @@ export default class RainShower extends React.Component {
     }
 
     componentDidMount() {
-        const days = 3;
+        const days = 3; // TODO: dynamic, max of 3 days
         const key = process.env.REACT_APP_WEATHER_API_KEY;
-        const query = 49103;
-        fetch('https://api.weatherapi.com/v1/forecast.json?q=' + query + '&days=' + days + '&key=' + key)
+        const query = 49103; // TODO: dynamic
+        fetch(`https://api.weatherapi.com/v1/forecast.json?q=${query}&days=${days}&key=${key}`)
           .then(res => res.json())
           .then(
             (result) => {
